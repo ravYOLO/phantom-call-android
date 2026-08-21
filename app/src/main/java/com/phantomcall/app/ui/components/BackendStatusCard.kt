@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Android
-import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -25,8 +23,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -38,7 +38,7 @@ import com.phantomcall.app.shell.ShizukuManager
 private data class BackendBadgeStyle(
     val badgeColor: Color,
     val iconTint: Color,
-    val icon: ImageVector,
+    val icon: Painter,
     val labelRes: Int,
     val descRes: Int
 )
@@ -51,21 +51,21 @@ fun BackendStatusCard() {
         BackendType.ROOT -> BackendBadgeStyle(
             Color(0xFF4CAF50).copy(alpha = 0.15f),
             Color(0xFF4CAF50),
-            Icons.Default.Terminal,
+            painterResource(R.drawable.ic_terminal),
             R.string.backend_root,
             R.string.backend_root_desc
         )
         BackendType.SHIZUKU -> BackendBadgeStyle(
             Color(0xFF2196F3).copy(alpha = 0.15f),
             Color(0xFF2196F3),
-            Icons.Default.Android,
+            painterResource(R.drawable.ic_android),
             R.string.backend_shizuku,
             R.string.backend_shizuku_desc
         )
         null -> BackendBadgeStyle(
             MaterialTheme.colorScheme.errorContainer,
             MaterialTheme.colorScheme.error,
-            Icons.Default.Warning,
+            rememberVectorPainter(Icons.Default.Warning),
             R.string.backend_none,
             R.string.backend_none_desc
         )
@@ -82,7 +82,7 @@ fun BackendStatusCard() {
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = style.icon,
+                    painter = style.icon,
                     contentDescription = null,
                     tint = style.iconTint,
                     modifier = Modifier.size(20.dp)

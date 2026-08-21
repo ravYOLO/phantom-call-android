@@ -22,9 +22,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Nightlight
-import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
@@ -61,6 +58,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -288,7 +286,7 @@ private fun HeroToggleCard(state: GhostState, onToggle: () -> Unit, elapsedSecon
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Shield,
+                        painter = painterResource(R.drawable.ic_hero_shield),
                         contentDescription = null,
                         modifier = Modifier.size(64.dp),
                         tint = if (state.isActive) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
@@ -355,22 +353,22 @@ private fun HeroTimerSection(state: GhostState, deadline: Long?, now: Long) {
             AssistChip(
                 onClick = { TimerManager.start(context, 30) },
                 label = { Text(stringResource(R.string.timer_30m)) },
-                leadingIcon = { Icon(Icons.Default.Timer, contentDescription = null) }
+                leadingIcon = { Icon(painterResource(R.drawable.ic_timer), contentDescription = null) }
             )
             AssistChip(
                 onClick = { TimerManager.start(context, 60) },
                 label = { Text(stringResource(R.string.timer_1h)) },
-                leadingIcon = { Icon(Icons.Default.Timer, contentDescription = null) }
+                leadingIcon = { Icon(painterResource(R.drawable.ic_timer), contentDescription = null) }
             )
             AssistChip(
                 onClick = { TimerManager.start(context, 120) },
                 label = { Text(stringResource(R.string.timer_2h)) },
-                leadingIcon = { Icon(Icons.Default.Timer, contentDescription = null) }
+                leadingIcon = { Icon(painterResource(R.drawable.ic_timer), contentDescription = null) }
             )
             AssistChip(
                 onClick = { TimerManager.startUntilMorning(context) },
                 label = { Text(stringResource(R.string.timer_until_morning)) },
-                leadingIcon = { Icon(Icons.Default.Nightlight, contentDescription = null) }
+                leadingIcon = { Icon(painterResource(R.drawable.ic_night), contentDescription = null) }
             )
         }
     }
