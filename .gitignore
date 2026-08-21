@@ -25,7 +25,7 @@ icon.svg
 export_presets.cfg
 localization/
 qa_test/
-src/
+/src/
 cache/
 logs/
 plugins/
