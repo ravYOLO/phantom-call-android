@@ -33,3 +33,6 @@ plugins/
 .kotlin/
 # sibling project with own repo
 /DeviceScope/
+
+# signing keystore (local only, CI uses GitHub secrets)
+keystore/
