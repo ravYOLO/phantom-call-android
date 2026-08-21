@@ -31,3 +31,5 @@ logs/
 plugins/
 .playwright-mcp/
 .kotlin/
+# sibling project with own repo
+/DeviceScope/
