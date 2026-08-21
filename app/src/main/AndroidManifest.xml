@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
+    <queries>
+        <intent>
+            <action android:name="moe.shizuku.manager.authorization.API_PROVIDER_V23" />
+        </intent>
+        <provider android:authorities="rikka.sui.provider" />
+    </queries>
+
+    <application
+        android:name=".PhantomApp"
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.PhantomCall"
+        android:localeConfig="@xml/locales_config"
+        android:enableOnBackInvokedCallback="true">
+
+        <provider
+            android:name="rikka.shizuku.ShizukuProvider"
+            android:authorities="${applicationId}.shizuku"
+            android:multiprocess="false"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+        </activity>
+
+        <service
+            android:name=".tile.PhantomTileService"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.TileService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.quicksettings.tile"
+                android:resource="@drawable/ic_shield" />
+        </service>
+
+        <service
+            android:name=".shell.ShizukuUserService"
+            android:exported="true"
+            android:permission="moe.shizuku.manager.permission.API_V23">
+            <intent-filter>
+                <action android:name="moe.shizuku.manager.intent.action.USER_SERVICE" />
+            </intent-filter>
+        </service>
+
+        <receiver
+            android:name=".widget.PhantomWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE_OPTIONS" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_phantom_info" />
+        </receiver>
+
+        <receiver
+            android:name=".scheduling.BootResetReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".scheduling.ScheduleReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".service.NotificationActionReceiver"
+            android:exported="false" />
+
+    </application>
+
+</manifest>

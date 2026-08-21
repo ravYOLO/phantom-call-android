@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="enable"
+        android:icon="@drawable/ic_shield"
+        android:shortcutShortLabel="@string/shortcut_enable">
+        <intent
+            android:action="com.phantomcall.app.action.SHORTCUT"
+            android:targetPackage="com.phantomcall.app"
+            android:targetClass="com.phantomcall.app.MainActivity">
+            <extra
+                android:name="phantom_action"
+                android:value="enable" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="disable"
+        android:icon="@drawable/ic_shield"
+        android:shortcutShortLabel="@string/shortcut_disable">
+        <intent
+            android:action="com.phantomcall.app.action.SHORTCUT"
+            android:targetPackage="com.phantomcall.app"
+            android:targetClass="com.phantomcall.app.MainActivity">
+            <extra
+                android:name="phantom_action"
+                android:value="disable" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="timer60"
+        android:icon="@drawable/ic_shield"
+        android:shortcutShortLabel="@string/shortcut_timer">
+        <intent
+            android:action="com.phantomcall.app.action.SHORTCUT"
+            android:targetPackage="com.phantomcall.app"
+            android:targetClass="com.phantomcall.app.MainActivity">
+            <extra
+                android:name="phantom_action"
+                android:value="timer60" />
+        </intent>
+    </shortcut>
+</shortcuts>

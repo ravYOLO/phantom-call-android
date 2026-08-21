@@ -1,0 +1,229 @@
+package com.phantomcall.app.ui
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.phantomcall.app.R
+import com.phantomcall.app.data.GhostState
+import com.phantomcall.app.data.GhostStateRepository
+import com.phantomcall.app.data.SimSlotMode
+import com.phantomcall.app.ui.components.BackendStatusCard
+import com.phantomcall.app.ui.components.DiagnosticsPanel
+import com.phantomcall.app.ui.components.LogDialog
+import com.phantomcall.app.ui.components.PresetGridCard
+import kotlinx.coroutines.delay
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MainScreen(viewModel: MainViewModel = viewModel()) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    var showDiag by remember { mutableStateOf(false) }
+    var showLog by remember { mutableStateOf(false) }
+    var showAbout by remember { mutableStateOf(false) }
+
+    CollectSnackbarEvents(viewModel, snackbarHostState)
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = {
+            AppTopBar(
+                onOpenDiag = { showDiag = true },
+                onOpenLog = { showLog = true },
+                onOpenAbout = { showAbout = true }
+            )
+        }
+    ) { innerPadding ->
+        MainContent(state, viewModel::toggle, innerPadding)
+    }
+
+    if (showDiag) DiagnosticsPanel(onDismiss = { showDiag = false })
+    if (showLog) LogDialog(onDismiss = { showLog = false })
+    if (showAbout) AboutDialog(onDismiss = { showAbout = false })
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AppTopBar(onOpenDiag: () -> Unit, onOpenLog: () -> Unit, onOpenAbout: () -> Unit) {
+    var menuExpanded by remember { mutableStateOf(false) }
+    TopAppBar(
+        title = { Text(stringResource(R.string.app_name)) },
+        actions = {
+            IconButton(onClick = { menuExpanded = true }) {
+                Icon(Icons.Default.MoreVert, contentDescription = null)
+            }
+            DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.diagnostics_title)) },
+                    onClick = {
+                        menuExpanded = false
+                        onOpenDiag()
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.command_log)) },
+                    onClick = {
+                        menuExpanded = false
+                        onOpenLog()
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.about)) },
+                    onClick = {
+                        menuExpanded = false
+                        onOpenAbout()
+                    }
+                )
+            }
+        }
+    )
+}
+
+@Composable
+private fun MainContent(state: GhostState, onToggle: () -> Unit, innerPadding: PaddingValues) {
+    val elapsedSeconds = rememberSessionElapsed(state)
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(innerPadding),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item { BackendStatusCard() }
+        item { MainSwitchCard(state, onToggle, elapsedSeconds) }
+        item { SimSelectorRow(state.simMode) }
+        item { PresetGridCard() }
+    }
+}
+
+@Composable
+private fun rememberSessionElapsed(state: GhostState): Long {
+    var elapsedSeconds by remember { mutableLongStateOf(0L) }
+    val sessionStart = state.sessionStartMs
+    LaunchedEffect(state.isActive, sessionStart) {
+        while (state.isActive && sessionStart != null) {
+            elapsedSeconds = (System.currentTimeMillis() - sessionStart) / 1000
+            delay(1000)
+        }
+    }
+    return elapsedSeconds
+}
+
+@Composable
+private fun MainSwitchCard(state: GhostState, onToggle: () -> Unit, elapsedSeconds: Long) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Shield,
+                contentDescription = null,
+                modifier = Modifier.size(32.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(if (state.isActive) R.string.status_on else R.string.status_off),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                if (state.isActive && state.sessionStartMs != null) {
+                    Text(
+                        text = stringResource(R.string.session_time) + ": " + formatElapsed(elapsedSeconds),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+            Switch(checked = state.isActive, onCheckedChange = { onToggle() })
+        }
+    }
+}
+
+@Composable
+private fun SimSelectorRow(simMode: SimSlotMode) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            val options = listOf(R.string.sim_both, R.string.sim_sim1, R.string.sim_sim2)
+            options.forEachIndexed { index, resId ->
+                SegmentedButton(
+                    selected = simMode.ordinal == index,
+                    onClick = { GhostStateRepository.setSimMode(SimSlotMode.entries[index]) },
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size)
+                ) {
+                    Text(stringResource(resId))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CollectSnackbarEvents(viewModel: MainViewModel, snackbarHostState: SnackbarHostState) {
+    val context = LocalContext.current
+    LaunchedEffect(Unit) {
+        viewModel.snackbarEvents.collect { resId ->
+            snackbarHostState.showSnackbar(context.getString(resId))
+        }
+    }
+}
+
+@Composable
+private fun AboutDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.app_name)) },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.ok))
+            }
+        }
+    )
+}
+
+private fun formatElapsed(totalSeconds: Long): String {
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+    return "%02d:%02d:%02d".format(hours, minutes, seconds)
+}
