@@ -1,5 +1,7 @@
 package com.phantomcall.app.ui
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -7,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -17,6 +20,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,6 +45,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,6 +58,9 @@ import com.phantomcall.app.R
 import com.phantomcall.app.data.GhostState
 import com.phantomcall.app.data.GhostStateRepository
 import com.phantomcall.app.data.SimSlotMode
+import com.phantomcall.app.data.SessionStats
+import com.phantomcall.app.data.UpdateChecker
+import com.phantomcall.app.data.UpdateInfo
 import com.phantomcall.app.scheduling.TimerManager
 import com.phantomcall.app.ui.components.BackendStatusCard
 import com.phantomcall.app.ui.components.BatteryOptimizationCard
@@ -61,6 +69,7 @@ import com.phantomcall.app.ui.components.LogDialog
 import com.phantomcall.app.ui.components.PresetGridCard
 import com.phantomcall.app.ui.components.ScheduleSettingsDialog
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,6 +81,24 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
     var showAbout by remember { mutableStateOf(false) }
     var showSchedule by remember { mutableStateOf(false) }
     var showThemeMenu by remember { mutableStateOf(false) }
+    var showStats by remember { mutableStateOf(false) }
+    var showUpdate by remember { mutableStateOf(false) }
+    var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
+    var updateChecking by remember { mutableStateOf(false) }
+    var updateChecked by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    val checkUpdates: () -> Unit = {
+        showUpdate = true
+        scope.launch {
+            updateChecking = true
+            updateChecked = false
+            updateInfo = UpdateChecker.checkForUpdates(context)
+            updateChecking = false
+            updateChecked = true
+        }
+    }
 
     CollectSnackbarEvents(viewModel, snackbarHostState)
 
@@ -83,7 +110,9 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                 onOpenLog = { showLog = true },
                 onOpenAbout = { showAbout = true },
                 onOpenSchedule = { showSchedule = true },
-                onOpenTheme = { showThemeMenu = true }
+                onOpenTheme = { showThemeMenu = true },
+                onOpenStats = { showStats = true },
+                onOpenUpdate = checkUpdates
             )
         }
     ) { innerPadding ->
@@ -95,6 +124,15 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
     if (showAbout) AboutDialog(onDismiss = { showAbout = false })
     if (showSchedule) ScheduleSettingsDialog(onDismiss = { showSchedule = false })
     if (showThemeMenu) ThemeDialog(onDismiss = { showThemeMenu = false })
+    if (showStats) StatisticsDialog(onDismiss = { showStats = false })
+    if (showUpdate) {
+        UpdateDialog(
+            updateInfo = updateInfo,
+            updateChecking = updateChecking,
+            updateChecked = updateChecked,
+            onDismiss = { showUpdate = false }
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -104,7 +142,9 @@ private fun AppTopBar(
     onOpenLog: () -> Unit,
     onOpenAbout: () -> Unit,
     onOpenSchedule: () -> Unit,
-    onOpenTheme: () -> Unit
+    onOpenTheme: () -> Unit,
+    onOpenStats: () -> Unit,
+    onOpenUpdate: () -> Unit
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     TopAppBar(
@@ -147,6 +187,20 @@ private fun AppTopBar(
                     onClick = {
                         menuExpanded = false
                         onOpenTheme()
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.stats_title)) },
+                    onClick = {
+                        menuExpanded = false
+                        onOpenStats()
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.update_check)) },
+                    onClick = {
+                        menuExpanded = false
+                        onOpenUpdate()
                     }
                 )
             }
@@ -348,6 +402,82 @@ private fun AboutDialog(onDismiss: () -> Unit) {
         confirmButton = {
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.ok))
+            }
+        }
+    )
+}
+
+@Composable
+private fun StatisticsDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.stats_title)) },
+        text = {
+            Column {
+                Text(stringResource(R.string.stats_today) + ": " + SessionStats.totalMinutesToday())
+                Text(stringResource(R.string.stats_7d) + ": " + SessionStats.totalMinutes7Days())
+                Text(stringResource(R.string.stats_all) + ": " + SessionStats.totalMinutesAll())
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.ok))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = { SessionStats.clear() }) {
+                Text(stringResource(R.string.stats_clear))
+            }
+        }
+    )
+}
+
+@Composable
+private fun UpdateDialog(
+    updateInfo: UpdateInfo?,
+    updateChecking: Boolean,
+    updateChecked: Boolean,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.update_check)) },
+        text = {
+            when {
+                updateChecking -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(stringResource(R.string.update_checking))
+                }
+                updateChecked && updateInfo == null -> Text(stringResource(R.string.update_latest))
+                updateInfo != null -> Column {
+                    Text(
+                        text = "v" + updateInfo.version + " " + updateInfo.title,
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = updateInfo.notes,
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 8
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.ok))
+            }
+        },
+        dismissButton = {
+            val info = updateInfo
+            if (info != null && !updateChecking) {
+                TextButton(onClick = {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(info.url)))
+                }) {
+                    Text(stringResource(R.string.update_download))
+                }
             }
         }
     )

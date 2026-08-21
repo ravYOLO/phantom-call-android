@@ -54,6 +54,15 @@ The debug APK is written to:
 app/build/outputs/apk/debug/app-debug.apk
 ```
 
+## Releases
+
+CI builds the app automatically:
+
+- Every push to `main` produces a debug APK.
+- Pushing a tag `v*` (for example `v1.2.0`) triggers a release build and publishes a GitHub Release with the signed APK attached.
+
+Use the **Check for updates** option inside the app to see whether a newer release is available.
+
 ## Safety & disclaimer
 
 - **Emergency calls are not guaranteed** while the mode is active — always test and keep a secondary way to reach emergency services.

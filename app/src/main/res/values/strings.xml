@@ -15,6 +15,11 @@
     <string name="backend_none">No shell backend</string>
     <string name="grant_permission">Grant permission</string>
     <string name="menu_theme">Theme</string>
+    <string name="stats_7d">Last 7 days</string>
+    <string name="stats_all">All time</string>
+    <string name="stats_clear">Clear history</string>
+    <string name="stats_title">Statistics</string>
+    <string name="stats_today">Today</string>
     <string name="status_on">Ghost mode ON</string>
     <string name="status_off">Ghost mode OFF</string>
     <string name="theme_dark">Dark</string>
@@ -67,4 +72,8 @@
     <string name="timer_active">Auto-off in %s</string>
     <string name="timer_cancel">Cancel timer</string>
     <string name="timer_until_morning">Until morning</string>
+    <string name="update_check">Check for updates</string>
+    <string name="update_checking">Checking…</string>
+    <string name="update_download">Download</string>
+    <string name="update_latest">You have the latest version</string>
 </resources>

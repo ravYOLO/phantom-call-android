@@ -15,6 +15,11 @@
     <string name="backend_none">Нет доступа к shell</string>
     <string name="grant_permission">Выдать разрешение</string>
     <string name="menu_theme">Тема</string>
+    <string name="stats_7d">За 7 дней</string>
+    <string name="stats_all">За всё время</string>
+    <string name="stats_clear">Очистить историю</string>
+    <string name="stats_title">Статистика</string>
+    <string name="stats_today">Сегодня</string>
     <string name="status_on">Режим призрака ВКЛ</string>
     <string name="status_off">Режим призрака ВЫКЛ</string>
     <string name="theme_dark">Тёмная</string>
@@ -67,4 +72,8 @@
     <string name="timer_active">Автовыключение через %s</string>
     <string name="timer_cancel">Отменить таймер</string>
     <string name="timer_until_morning">До утра</string>
+    <string name="update_check">Проверить обновления</string>
+    <string name="update_checking">Проверка…</string>
+    <string name="update_download">Скачать</string>
+    <string name="update_latest">У вас последняя версия</string>
 </resources>

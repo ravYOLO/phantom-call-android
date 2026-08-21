@@ -4,6 +4,7 @@ import com.phantomcall.app.data.BuiltInPresets
 import com.phantomcall.app.data.CustomPresetStore
 import com.phantomcall.app.data.GhostStateRepository
 import com.phantomcall.app.data.Preset
+import com.phantomcall.app.data.SessionStats
 import com.phantomcall.app.shell.AutoShellExecutor
 import com.phantomcall.app.shell.CommandResult
 import kotlinx.coroutines.sync.Mutex
@@ -45,7 +46,11 @@ class GhostModeController private constructor() {
         val commands = CommandBuilder.restoreCommands(preset, snapshot.savedMasks, slots)
         val results = commands.map { AutoShellExecutor.exec(it) }
         if (results.all { it.success }) {
+            val sessionStart = snapshot.sessionStartMs
             GhostStateRepository.update { it.copy(isActive = false, sessionStartMs = null) }
+            if (sessionStart != null) {
+                SessionStats.recordSession(sessionStart, System.currentTimeMillis())
+            }
             ToggleResult.Success("disabled")
         } else {
             ToggleResult.Failure("error_restore_failed")
