@@ -106,7 +106,16 @@ class StatusNotificationManager private constructor() {
                 NotificationActionReceiver.turnOffPendingIntent(context)
             )
             .build()
-        NotificationManagerCompat.from(context).notify(NOTIF_ID, notification)
+        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        runCatching {
+            NotificationManagerCompat.from(context).notify(NOTIF_ID, notification)
+        }
     }
 
     private fun contentPendingIntent(context: Context): PendingIntent {

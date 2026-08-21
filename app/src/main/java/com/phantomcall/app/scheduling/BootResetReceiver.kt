@@ -14,6 +14,7 @@ class BootResetReceiver : BroadcastReceiver() {
         runCatching {
             GhostStateRepository.resetAfterBoot()
             ScheduleManager.initialize(context)
+            TimerManager.rearmAfterBoot(context)
             PhantomWidgetProvider.updateAll(context)
             StatusNotificationManager.get().stop()
         }

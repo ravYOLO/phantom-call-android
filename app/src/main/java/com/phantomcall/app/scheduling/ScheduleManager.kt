@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.os.Build
 import com.phantomcall.app.domain.GhostModeController
 import java.time.ZonedDateTime
 import kotlinx.coroutines.CoroutineScope
@@ -63,6 +64,9 @@ object ScheduleManager {
             }
             val startMin = targetPrefs.getInt(KEY_SCHEDULE_START, DEFAULT_MINUTE)
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
+                return
+            }
             alarmManager.setExactAndAllowWhileIdle(
                 AlarmManager.RTC_WAKEUP,
                 nextStartMillis(ZonedDateTime.now(), startMin),

@@ -46,7 +46,8 @@ object ShizukuManager {
                 }
                 return
             }
-            deferred.complete(IUserService.Stub.asInterface(service))
+            val proxy = runCatching { IUserService.Stub.asInterface(service) }.getOrNull()
+            deferred.complete(proxy)
         }
 
         override fun onServiceDisconnected(name: ComponentName) {
