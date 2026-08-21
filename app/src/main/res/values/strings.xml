@@ -2,6 +2,9 @@
 <resources>
     <string name="app_name">Phantom Call</string>
     <string name="about">About</string>
+    <string name="battery_allow">Disable optimization</string>
+    <string name="battery_desc">Allow background operation for reliable timers and schedule</string>
+    <string name="battery_title">Battery optimization</string>
     <string name="ok">OK</string>
     <string name="tile_active">Active</string>
     <string name="tile_inactive">Inactive</string>
@@ -11,10 +14,15 @@
     <string name="backend_shizuku">Shizuku</string>
     <string name="backend_none">No shell backend</string>
     <string name="grant_permission">Grant permission</string>
+    <string name="menu_theme">Theme</string>
     <string name="status_on">Ghost mode ON</string>
     <string name="status_off">Ghost mode OFF</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_system">System</string>
     <string name="turn_off">Turn off</string>
     <string name="session_time">Session time</string>
+    <string name="pick">Pick</string>
     <string name="preset_universal">Universal</string>
     <string name="preset_pixel">Pixel</string>
     <string name="preset_xiaomi">Xiaomi</string>
@@ -42,9 +50,21 @@
     <string name="error_restore_failed">Restore failed, protection kept</string>
     <string name="enable_failed">Failed to enable</string>
     <string name="boot_state_reset">State reset after reboot</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="schedule_enable">Enable schedule</string>
+    <string name="schedule_end">End</string>
+    <string name="schedule_set">Quiet hours</string>
+    <string name="schedule_start">Start</string>
     <string name="widget_on_desc">Ghost mode on, tap to disable</string>
     <string name="widget_off_desc">Ghost mode off, tap to enable</string>
     <string name="shortcut_enable">Enable ghost</string>
     <string name="shortcut_disable">Disable ghost</string>
     <string name="shortcut_timer">60-minute timer</string>
+    <string name="timer_1h">+1 hour</string>
+    <string name="timer_2h">+2 hours</string>
+    <string name="timer_30m">+30 min</string>
+    <string name="timer_active">Auto-off in %s</string>
+    <string name="timer_cancel">Cancel timer</string>
+    <string name="timer_until_morning">Until morning</string>
 </resources>

@@ -68,7 +68,7 @@ class GhostModeController private constructor() {
     }
 
     private suspend fun rollbackExecuted(commands: List<String>, results: List<CommandResult>) {
-        val executed = commands.zip(results).takeWhile { it.second.success }.map { it.first }
+        val executed = commands.zip(results).filter { it.second.success }.map { it.first }
         executed.asReversed().forEach { AutoShellExecutor.exec(it) }
     }
 }

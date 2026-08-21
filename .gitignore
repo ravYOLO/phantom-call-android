@@ -9,3 +9,25 @@ captures/
 *.apk
 *.aab
 .DS_Store
+
+# unrelated Godot project artifacts in this folder
+project.godot
+.godot/
+scenes/
+*.tres
+*.import
+
+# unrelated projects living in this folder (do NOT publish)
+HOLD-THE-DOOR-GDD.md
+hold_the_door_sim.py
+tdx_auto.lua
+icon.svg
+export_presets.cfg
+localization/
+qa_test/
+src/
+cache/
+logs/
+plugins/
+.playwright-mcp/
+.kotlin/

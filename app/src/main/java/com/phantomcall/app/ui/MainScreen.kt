@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
@@ -19,9 +20,11 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -50,10 +53,13 @@ import com.phantomcall.app.R
 import com.phantomcall.app.data.GhostState
 import com.phantomcall.app.data.GhostStateRepository
 import com.phantomcall.app.data.SimSlotMode
+import com.phantomcall.app.scheduling.TimerManager
 import com.phantomcall.app.ui.components.BackendStatusCard
+import com.phantomcall.app.ui.components.BatteryOptimizationCard
 import com.phantomcall.app.ui.components.DiagnosticsPanel
 import com.phantomcall.app.ui.components.LogDialog
 import com.phantomcall.app.ui.components.PresetGridCard
+import com.phantomcall.app.ui.components.ScheduleSettingsDialog
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,6 +70,8 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
     var showDiag by remember { mutableStateOf(false) }
     var showLog by remember { mutableStateOf(false) }
     var showAbout by remember { mutableStateOf(false) }
+    var showSchedule by remember { mutableStateOf(false) }
+    var showThemeMenu by remember { mutableStateOf(false) }
 
     CollectSnackbarEvents(viewModel, snackbarHostState)
 
@@ -73,7 +81,9 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
             AppTopBar(
                 onOpenDiag = { showDiag = true },
                 onOpenLog = { showLog = true },
-                onOpenAbout = { showAbout = true }
+                onOpenAbout = { showAbout = true },
+                onOpenSchedule = { showSchedule = true },
+                onOpenTheme = { showThemeMenu = true }
             )
         }
     ) { innerPadding ->
@@ -83,11 +93,19 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
     if (showDiag) DiagnosticsPanel(onDismiss = { showDiag = false })
     if (showLog) LogDialog(onDismiss = { showLog = false })
     if (showAbout) AboutDialog(onDismiss = { showAbout = false })
+    if (showSchedule) ScheduleSettingsDialog(onDismiss = { showSchedule = false })
+    if (showThemeMenu) ThemeDialog(onDismiss = { showThemeMenu = false })
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AppTopBar(onOpenDiag: () -> Unit, onOpenLog: () -> Unit, onOpenAbout: () -> Unit) {
+private fun AppTopBar(
+    onOpenDiag: () -> Unit,
+    onOpenLog: () -> Unit,
+    onOpenAbout: () -> Unit,
+    onOpenSchedule: () -> Unit,
+    onOpenTheme: () -> Unit
+) {
     var menuExpanded by remember { mutableStateOf(false) }
     TopAppBar(
         title = { Text(stringResource(R.string.app_name)) },
@@ -117,6 +135,20 @@ private fun AppTopBar(onOpenDiag: () -> Unit, onOpenLog: () -> Unit, onOpenAbout
                         onOpenAbout()
                     }
                 )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.schedule_set)) },
+                    onClick = {
+                        menuExpanded = false
+                        onOpenSchedule()
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.menu_theme)) },
+                    onClick = {
+                        menuExpanded = false
+                        onOpenTheme()
+                    }
+                )
             }
         }
     )
@@ -131,6 +163,7 @@ private fun MainContent(state: GhostState, onToggle: () -> Unit, innerPadding: P
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item { BackendStatusCard() }
+        item { BatteryOptimizationCard() }
         item { MainSwitchCard(state, onToggle, elapsedSeconds) }
         item { SimSelectorRow(state.simMode) }
         item { PresetGridCard() }
@@ -152,6 +185,15 @@ private fun rememberSessionElapsed(state: GhostState): Long {
 
 @Composable
 private fun MainSwitchCard(state: GhostState, onToggle: () -> Unit, elapsedSeconds: Long) {
+    val context = LocalContext.current
+    val timerDeadline by TimerManager.active.collectAsStateWithLifecycle()
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(timerDeadline) {
+        while (true) {
+            delay(1000)
+            now = System.currentTimeMillis()
+        }
+    }
     Card(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -176,6 +218,48 @@ private fun MainSwitchCard(state: GhostState, onToggle: () -> Unit, elapsedSecon
                 }
             }
             Switch(checked = state.isActive, onCheckedChange = { onToggle() })
+        }
+        val deadline = timerDeadline
+        if (deadline != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.timer_active, formatRemaining(deadline, now)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(onClick = { TimerManager.cancel(context) }) {
+                    Text(stringResource(R.string.timer_cancel))
+                }
+            }
+        } else if (state.isActive) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = false,
+                    onClick = { TimerManager.start(context, 30) },
+                    label = { Text(stringResource(R.string.timer_30m)) }
+                )
+                FilterChip(
+                    selected = false,
+                    onClick = { TimerManager.start(context, 60) },
+                    label = { Text(stringResource(R.string.timer_1h)) }
+                )
+                FilterChip(
+                    selected = false,
+                    onClick = { TimerManager.start(context, 120) },
+                    label = { Text(stringResource(R.string.timer_2h)) }
+                )
+                FilterChip(
+                    selected = false,
+                    onClick = { TimerManager.startUntilMorning(context) },
+                    label = { Text(stringResource(R.string.timer_until_morning)) }
+                )
+            }
         }
     }
 }
@@ -209,16 +293,73 @@ private fun CollectSnackbarEvents(viewModel: MainViewModel, snackbarHostState: S
 }
 
 @Composable
-private fun AboutDialog(onDismiss: () -> Unit) {
+private fun ThemeDialog(onDismiss: () -> Unit) {
+    val themeName by GhostStateRepository.themeName.collectAsStateWithLifecycle()
+    val themes = listOf(
+        R.string.theme_system to "system",
+        R.string.theme_dark to "dark",
+        R.string.theme_light to "light"
+    )
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.app_name)) },
+        title = { Text(stringResource(R.string.menu_theme)) },
+        text = {
+            Column {
+                themes.forEach { (labelRes, name) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectable(
+                                selected = themeName == name,
+                                onClick = {
+                                    GhostStateRepository.setTheme(name)
+                                    onDismiss()
+                                }
+                            )
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(selected = themeName == name, onClick = null)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(stringResource(labelRes))
+                    }
+                }
+            }
+        },
         confirmButton = {
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.ok))
             }
         }
     )
+}
+
+@Composable
+private fun AboutDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.app_name)) },
+        text = {
+            Column {
+                Text("Phantom Call 1.0.0")
+                Text("MIT License")
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.ok))
+            }
+        }
+    )
+}
+
+private fun formatRemaining(deadlineMillis: Long, nowMillis: Long): String {
+    val remainingSeconds = ((deadlineMillis - nowMillis) / 1000).coerceAtLeast(0)
+    val hours = remainingSeconds / 3600
+    val minutes = (remainingSeconds % 3600) / 60
+    val seconds = remainingSeconds % 60
+    return if (hours > 0) "%02d:%02d:%02d".format(hours, minutes, seconds)
+    else "%02d:%02d".format(minutes, seconds)
 }
 
 private fun formatElapsed(totalSeconds: Long): String {
