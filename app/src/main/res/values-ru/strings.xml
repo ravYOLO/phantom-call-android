@@ -5,6 +5,12 @@
     <string name="battery_allow">Отключить оптимизацию</string>
     <string name="battery_desc">Разрешите работу в фоне для надёжных таймеров и расписания</string>
     <string name="battery_title">Оптимизация батареи</string>
+    <string name="backup_export">Экспорт</string>
+    <string name="backup_fail">Некорректная копия</string>
+    <string name="backup_import">Импорт</string>
+    <string name="backup_ok">Резервная копия восстановлена</string>
+    <string name="backup_paste_hint">Вставьте JSON резервной копии</string>
+    <string name="backup_title">Резервная копия</string>
     <string name="ok">ОК</string>
     <string name="tile_active">Активно</string>
     <string name="tile_inactive">Неактивно</string>
@@ -28,9 +34,11 @@
     <string name="no_backend_title">Призрачному режиму нужны права</string>
     <string name="stats_7d">За 7 дней</string>
     <string name="stats_all">За всё время</string>
+    <string name="stats_avg_session">Средняя сессия</string>
     <string name="stats_clear">Очистить историю</string>
     <string name="stats_title">Статистика</string>
     <string name="stats_today">Сегодня</string>
+    <string name="stats_total_hours">Всего времени</string>
     <string name="status_on">Режим призрака ВКЛ</string>
     <string name="status_off">Режим призрака ВЫКЛ</string>
     <string name="theme_dark">Тёмная</string>
@@ -83,6 +91,7 @@
     <string name="timer_active">Автовыключение через %s</string>
     <string name="timer_cancel">Отменить таймер</string>
     <string name="timer_until_morning">До утра</string>
+    <string name="update_banner_title">Доступно обновление</string>
     <string name="update_check">Проверить обновления</string>
     <string name="update_checking">Проверка…</string>
     <string name="update_download">Скачать</string>

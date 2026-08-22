@@ -61,6 +61,10 @@ object SessionStats {
         persist(emptyList())
     }
 
+    fun replaceSessions(context: Context, list: List<SessionEntry>) {
+        persist(list)
+    }
+
     private fun totalMinutes(predicate: (Long) -> Boolean): Long =
         _sessions.value.filter { predicate(it.endMs) }.sumOf { it.endMs - it.startMs } / MINUTE_MS
 

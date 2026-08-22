@@ -1,7 +1,9 @@
 package com.phantomcall.app.ui
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +23,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
@@ -33,6 +37,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
@@ -65,6 +70,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.phantomcall.app.R
+import com.phantomcall.app.data.BackupManager
 import com.phantomcall.app.data.GhostState
 import com.phantomcall.app.data.GhostStateRepository
 import com.phantomcall.app.data.SimSlotMode
@@ -82,6 +88,10 @@ import com.phantomcall.app.ui.components.ScheduleSettingsDialog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+private const val PREFS_NAME = "phantom_prefs"
+private const val KEY_LAST_UPDATE_CHECK = "last_update_check"
+private const val UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000L
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(viewModel: MainViewModel = viewModel()) {
@@ -94,11 +104,25 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
     var showThemeMenu by remember { mutableStateOf(false) }
     var showStats by remember { mutableStateOf(false) }
     var showUpdate by remember { mutableStateOf(false) }
+    var showBackup by remember { mutableStateOf(false) }
     var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
     var updateChecking by remember { mutableStateOf(false) }
     var updateChecked by remember { mutableStateOf(false) }
+    var showUpdateBanner by remember { mutableStateOf(false) }
+    var dismissedUpdate by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val lastCheck = prefs.getLong(KEY_LAST_UPDATE_CHECK, 0L)
+        val now = System.currentTimeMillis()
+        if (now - lastCheck > UPDATE_CHECK_INTERVAL_MS) {
+            prefs.edit().putLong(KEY_LAST_UPDATE_CHECK, now).apply()
+            updateInfo = UpdateChecker.checkForUpdates(context)
+            showUpdateBanner = updateInfo != null && !dismissedUpdate
+        }
+    }
 
     val checkUpdates: () -> Unit = {
         showUpdate = true
@@ -123,11 +147,29 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                 onOpenSchedule = { showSchedule = true },
                 onOpenTheme = { showThemeMenu = true },
                 onOpenStats = { showStats = true },
+                onOpenBackup = { showBackup = true },
                 onOpenUpdate = checkUpdates
             )
         }
     ) { innerPadding ->
-        MainContent(state, viewModel::toggle, innerPadding)
+        MainContent(
+            state = state,
+            onToggle = viewModel::toggle,
+            innerPadding = innerPadding,
+            showUpdateBanner = showUpdateBanner,
+            updateInfo = updateInfo,
+            onDismissUpdateBanner = {
+                showUpdateBanner = false
+                dismissedUpdate = true
+            },
+            onDownloadUpdate = {
+                updateInfo?.let { info ->
+                    runCatching {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(info.url)))
+                    }
+                }
+            }
+        )
     }
 
     if (showDiag) DiagnosticsPanel(onDismiss = { showDiag = false })
@@ -136,6 +178,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
     if (showSchedule) ScheduleSettingsDialog(onDismiss = { showSchedule = false })
     if (showThemeMenu) ThemeDialog(onDismiss = { showThemeMenu = false })
     if (showStats) StatisticsDialog(onDismiss = { showStats = false })
+    if (showBackup) BackupDialog(onDismiss = { showBackup = false })
     if (showUpdate) {
         UpdateDialog(
             updateInfo = updateInfo,
@@ -155,6 +198,7 @@ private fun AppTopBar(
     onOpenSchedule: () -> Unit,
     onOpenTheme: () -> Unit,
     onOpenStats: () -> Unit,
+    onOpenBackup: () -> Unit,
     onOpenUpdate: () -> Unit
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
@@ -208,6 +252,13 @@ private fun AppTopBar(
                     }
                 )
                 DropdownMenuItem(
+                    text = { Text(stringResource(R.string.backup_title)) },
+                    onClick = {
+                        menuExpanded = false
+                        onOpenBackup()
+                    }
+                )
+                DropdownMenuItem(
                     text = { Text(stringResource(R.string.update_check)) },
                     onClick = {
                         menuExpanded = false
@@ -220,7 +271,15 @@ private fun AppTopBar(
 }
 
 @Composable
-private fun MainContent(state: GhostState, onToggle: () -> Unit, innerPadding: PaddingValues) {
+private fun MainContent(
+    state: GhostState,
+    onToggle: () -> Unit,
+    innerPadding: PaddingValues,
+    showUpdateBanner: Boolean,
+    updateInfo: UpdateInfo?,
+    onDismissUpdateBanner: () -> Unit,
+    onDownloadUpdate: () -> Unit
+) {
     val elapsedSeconds = rememberSessionElapsed(state)
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(innerPadding),
@@ -228,6 +287,16 @@ private fun MainContent(state: GhostState, onToggle: () -> Unit, innerPadding: P
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item { NoBackendBanner() }
+        item {
+            val info = updateInfo
+            if (showUpdateBanner && info != null) {
+                UpdateBannerCard(
+                    info = info,
+                    onDismiss = onDismissUpdateBanner,
+                    onDownload = onDownloadUpdate
+                )
+            }
+        }
         item { BackendStatusCard() }
         item { BatteryOptimizationCard() }
         item { HeroToggleCard(state, onToggle, elapsedSeconds) }
@@ -465,6 +534,7 @@ private fun AboutDialog(onDismiss: () -> Unit) {
 
 @Composable
 private fun StatisticsDialog(onDismiss: () -> Unit) {
+    val sessions by SessionStats.sessions.collectAsStateWithLifecycle()
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.stats_title)) },
@@ -473,6 +543,13 @@ private fun StatisticsDialog(onDismiss: () -> Unit) {
                 Text(stringResource(R.string.stats_today) + ": " + SessionStats.totalMinutesToday())
                 Text(stringResource(R.string.stats_7d) + ": " + SessionStats.totalMinutes7Days())
                 Text(stringResource(R.string.stats_all) + ": " + SessionStats.totalMinutesAll())
+                Text(stringResource(R.string.stats_total_hours) + ": " + formatHours(SessionStats.totalMinutesAll()))
+                val averageMinutes = if (sessions.isNotEmpty()) {
+                    SessionStats.totalMinutesAll() / sessions.size
+                } else {
+                    0L
+                }
+                Text(stringResource(R.string.stats_avg_session) + ": " + formatMinutes(averageMinutes))
             }
         },
         confirmButton = {
@@ -534,6 +611,92 @@ private fun UpdateDialog(
                 }) {
                     Text(stringResource(R.string.update_download))
                 }
+            }
+        }
+    )
+}
+
+@Composable
+private fun UpdateBannerCard(
+    info: UpdateInfo,
+    onDismiss: () -> Unit,
+    onDownload: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.Info,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.update_banner_title) + " " + info.version,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Text(
+                    text = info.notes.take(120),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+            IconButton(onClick = onDismiss) {
+                Icon(Icons.Default.Close, contentDescription = null)
+            }
+            TextButton(onClick = onDownload) {
+                Text(stringResource(R.string.update_download))
+            }
+        }
+    }
+}
+
+@Composable
+private fun BackupDialog(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    var importText by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.backup_title)) },
+        text = {
+            Column {
+                TextButton(onClick = {
+                    runCatching {
+                        val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, BackupManager.export(context))
+                        }
+                        context.startActivity(Intent.createChooser(sendIntent, null))
+                    }
+                }) {
+                    Text(stringResource(R.string.backup_export))
+                }
+                OutlinedTextField(
+                    value = importText,
+                    onValueChange = { importText = it },
+                    label = { Text(stringResource(R.string.backup_paste_hint)) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                TextButton(onClick = {
+                    val result = BackupManager.import(context, importText)
+                    val messageRes = if (result.isSuccess) R.string.backup_ok else R.string.backup_fail
+                    Toast.makeText(context, messageRes, Toast.LENGTH_SHORT).show()
+                    importText = ""
+                }) {
+                    Text(stringResource(R.string.backup_import))
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.ok))
             }
         }
     )
@@ -615,4 +778,12 @@ private fun formatElapsed(totalSeconds: Long): String {
     val minutes = (totalSeconds % 3600) / 60
     val seconds = totalSeconds % 60
     return "%02d:%02d:%02d".format(hours, minutes, seconds)
+}
+
+private fun formatHours(totalMinutes: Long): String = formatMinutes(totalMinutes)
+
+private fun formatMinutes(totalMinutes: Long): String {
+    val hours = totalMinutes / 60
+    val minutes = totalMinutes % 60
+    return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
 }

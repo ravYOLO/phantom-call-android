@@ -5,6 +5,12 @@
     <string name="battery_allow">Disable optimization</string>
     <string name="battery_desc">Allow background operation for reliable timers and schedule</string>
     <string name="battery_title">Battery optimization</string>
+    <string name="backup_export">Export backup</string>
+    <string name="backup_fail">Invalid backup</string>
+    <string name="backup_import">Import backup</string>
+    <string name="backup_ok">Backup restored</string>
+    <string name="backup_paste_hint">Paste backup JSON</string>
+    <string name="backup_title">Backup</string>
     <string name="ok">OK</string>
     <string name="tile_active">Active</string>
     <string name="tile_inactive">Inactive</string>
@@ -28,9 +34,11 @@
     <string name="no_backend_title">Ghost mode needs privileges</string>
     <string name="stats_7d">Last 7 days</string>
     <string name="stats_all">All time</string>
+    <string name="stats_avg_session">Avg session</string>
     <string name="stats_clear">Clear history</string>
     <string name="stats_title">Statistics</string>
     <string name="stats_today">Today</string>
+    <string name="stats_total_hours">Total time</string>
     <string name="status_on">Ghost mode ON</string>
     <string name="status_off">Ghost mode OFF</string>
     <string name="theme_dark">Dark</string>
@@ -83,6 +91,7 @@
     <string name="timer_active">Auto-off in %s</string>
     <string name="timer_cancel">Cancel timer</string>
     <string name="timer_until_morning">Until morning</string>
+    <string name="update_banner_title">Update available</string>
     <string name="update_check">Check for updates</string>
     <string name="update_checking">Checking…</string>
     <string name="update_download">Download</string>

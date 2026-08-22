@@ -36,3 +36,6 @@ plugins/
 
 # signing keystore (local only, CI uses GitHub secrets)
 keystore/
+
+# sibling Godot game (own repo)
+/HoldTheDoor/
