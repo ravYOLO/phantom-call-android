@@ -53,10 +53,11 @@ object CustomPresetStore {
 
     fun import(json: String): Result<Int> = runCatching {
         val imported = jsonFormat.decodeFromString<List<Preset>>(json)
-        val importedIds = imported.map { it.id }.toSet()
-        val merged = _state.value.filterNot { it.id in importedIds } + imported
+        val kept = imported.filter { it.id.isNotBlank() && BuiltInPresets.byId(it.id) == null }
+        val keptIds = kept.map { it.id }.toSet()
+        val merged = _state.value.filterNot { it.id in keptIds } + kept
         check(persist(merged))
-        imported.size
+        kept.size
     }
 
     fun byIdOrNull(id: String): Preset? =

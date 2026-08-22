@@ -103,6 +103,7 @@ fun BackendStatusCard() {
             if (backend == null) {
                 TextButton(onClick = {
                     runCatching { ShizukuManager.requestPermission(context as Activity) }
+                    AutoShellExecutor.recheckBackend()
                 }) {
                     Text(stringResource(R.string.grant_permission))
                 }

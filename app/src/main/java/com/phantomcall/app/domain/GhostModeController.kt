@@ -7,8 +7,10 @@ import com.phantomcall.app.data.Preset
 import com.phantomcall.app.data.SessionStats
 import com.phantomcall.app.shell.AutoShellExecutor
 import com.phantomcall.app.shell.CommandResult
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeoutOrNull
 
 class GhostModeController private constructor() {
 
@@ -21,8 +23,20 @@ class GhostModeController private constructor() {
     }
 
     suspend fun enable(): ToggleResult = toggleLock.withLock {
+        if (GhostStateRepository.state.value.isActive) {
+            return@withLock ToggleResult.Success("already_enabled")
+        }
         if (AutoShellExecutor.currentBackend() == null) {
-            return@withLock ToggleResult.Failure("error_no_backend")
+            AutoShellExecutor.recheckBackend()
+            val ready = withTimeoutOrNull(3000) {
+                while (AutoShellExecutor.currentBackend() == null) {
+                    delay(200)
+                }
+                true
+            }
+            if (ready != true) {
+                return@withLock ToggleResult.Failure("error_no_backend")
+            }
         }
         val snapshot = GhostStateRepository.state.value
         val preset = resolvePreset(snapshot.presetId)
@@ -41,6 +55,9 @@ class GhostModeController private constructor() {
 
     suspend fun disable(): ToggleResult = toggleLock.withLock {
         val snapshot = GhostStateRepository.state.value
+        if (!snapshot.isActive) {
+            return@withLock ToggleResult.Success("already_disabled")
+        }
         val preset = resolvePreset(snapshot.presetId)
         val slots = snapshot.simMode.slots
         val commands = CommandBuilder.restoreCommands(preset, snapshot.savedMasks, slots)
